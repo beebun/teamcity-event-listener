@@ -30,8 +30,13 @@ using NUnit.Engine.Extensibility;
 
 namespace NUnit.Engine.Listeners
 {
+    using Newtonsoft.Json;
     using System.Diagnostics.CodeAnalysis;
+    using System.Net.Http;
     using System.Text;
+    using System.Threading.Tasks;
+
+
 
     // Note: Setting mimimum engine version in this case is
     // purely documentary since engines prior to 3.4 do not
@@ -448,6 +453,22 @@ namespace NUnit.Engine.Listeners
             }
 
             _outWriter.WriteLine(sb.ToString());
+            Send(sb.ToString());
+        }
+
+        public async void Send(string log)
+        {
+            var returned = await PostData(log);
+        }
+
+        static async Task<int> PostData(string log)
+        {
+            var json = JsonConvert.SerializeObject(new { key1 = log});
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var client = new HttpClient();
+            client.Timeout = TimeSpan.FromMilliseconds(5000);
+            var response = await client.PostAsync("http://10.120.10.110:3001", content);
+            return 0;
         }
     }
 }
