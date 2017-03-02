@@ -36,7 +36,10 @@ namespace NUnit.Engine.Listeners
     using System.Text;
     using System.Threading.Tasks;
 
-
+    public class ConfigJson
+    {
+        public string masterEndpoint { get; set; }
+    }
 
     // Note: Setting mimimum engine version in this case is
     // purely documentary since engines prior to 3.4 do not
@@ -50,6 +53,8 @@ namespace NUnit.Engine.Listeners
         private readonly TextWriter _outWriter;
         private readonly Dictionary<string, string> _refs = new Dictionary<string, string>();
         private readonly Dictionary<string, int> _blockCounters = new Dictionary<string, int>();
+
+        static string masterEndpoint = "";
 
         public TeamCityEventListener() : this(Console.Out) { }
 
@@ -69,6 +74,13 @@ namespace NUnit.Engine.Listeners
 
             var testEvent = doc.FirstChild;
             RegisterMessage(testEvent);
+
+            using (StreamReader r = new StreamReader("config.json"))
+            {
+                string json = r.ReadToEnd();
+                List<ConfigJson> ro = JsonConvert.DeserializeObject<List<ConfigJson>>(json);
+                masterEndpoint = ro[0].masterEndpoint;
+            }
         }
 
         #endregion
@@ -463,11 +475,11 @@ namespace NUnit.Engine.Listeners
 
         static async Task<int> PostData(string log)
         {
-            var json = JsonConvert.SerializeObject(new { key1 = log});
+            var json = JsonConvert.SerializeObject(new { result = log });
             var content = new StringContent(json, Encoding.UTF8, "application/json");
             var client = new HttpClient();
             client.Timeout = TimeSpan.FromMilliseconds(5000);
-            var response = await client.PostAsync("http://10.120.10.110:3001", content);
+            var response = await client.PostAsync(masterEndpoint, content);
             return 0;
         }
     }
